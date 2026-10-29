@@ -79,9 +79,8 @@ export function RiskConsoleWidget() {
     if (strategyId) void refresh()
   }, [refresh, strategyId])
 
-  const findings = preview?.findings ?? []
-  const warnings = findings.filter((item) => item.severity === "warning")
-  const info = findings.filter((item) => item.severity === "info")
+  const warnings = (preview?.warnings ?? []).filter((item) => item.message)
+  const notes = preview?.info ?? []
 
   return (
     <div className="panel">
@@ -107,15 +106,23 @@ export function RiskConsoleWidget() {
       </div>
       {error && <p className="error">{error}</p>}
       {preview?.policy && (
-        <p className="hint">
-          Rules: <strong>{preview.policy.label}</strong> — {preview.policy.reason}
-          {preview.policy.resume_condition ? ` · ${preview.policy.resume_condition}` : ""}
-        </p>
+        <div className="risk-row">
+          <ShieldCheck size={16} className="ok" />
+          <strong>rules in force</strong>
+          <span>
+            {preview.policy.label} — {preview.policy.reason}
+            {preview.policy.resume_condition ? ` · ${preview.policy.resume_condition}` : ""}
+          </span>
+        </div>
       )}
       {preview?.metrics && (
-        <p className="hint">
-          Drawdown {percent(preview.metrics.drawdown)} · last day {percent(preview.metrics.daily_return)}
-        </p>
+        <div className="risk-row">
+          <span />
+          <strong>drawdown / last day</strong>
+          <span>
+            {percent(preview.metrics.drawdown)} / {percent(preview.metrics.daily_return)}
+          </span>
+        </div>
       )}
       <div className="risk-list">
         {(preview?.checks ?? []).map((check) => (
@@ -137,13 +144,16 @@ export function RiskConsoleWidget() {
           ))}
         </div>
       )}
-      {info.length > 0 && (
-        <details className="risk-details">
-          <summary>{info.length} research notes</summary>
-          {info.map((item) => (
-            <p className="hint" key={`info-${item.rule}`}>{item.message}</p>
+      {notes.length > 0 && (
+        <div className="risk-list">
+          {notes.map((item) => (
+            <div className="risk-row" key={`info-${item.rule}`}>
+              <span />
+              <strong>research note</strong>
+              <span>{item.message}</span>
+            </div>
           ))}
-        </details>
+        </div>
       )}
 
       <div className="panel-heading">
@@ -185,15 +195,29 @@ export function RiskConsoleWidget() {
                 <span>{percent(scenario.portfolio_return)}</span>
               </div>
             ))}
+            {analysis.warnings.map((warning) => (
+              <div className="risk-row" key={`warning-${warning.slice(0, 40)}`}>
+                <AlertTriangle size={16} className="warn" />
+                <strong>analysis warning</strong>
+                <span>{warning}</span>
+              </div>
+            ))}
           </div>
           {analysis.unevaluated.symbols.length > 0 && (
-            <p className="hint">
-              Not evaluated: {analysis.unevaluated.symbols.join(", ")} (
-              {percent(analysis.unevaluated.weight_share)} of the account).
-            </p>
+            <div className="risk-row">
+              <AlertTriangle size={16} className="warn" />
+              <strong>not evaluated</strong>
+              <span>
+                {analysis.unevaluated.symbols.join(", ")} ({percent(analysis.unevaluated.weight_share)} of the account)
+              </span>
+            </div>
           )}
-          <p className="hint">{analysis.disclaimer}</p>
-          <p className="hint">Inputs {analysis.input_hash.slice(0, 12)}{analysis.cached ? " (replayed)" : ""}</p>
+          <div className="risk-row">
+            <span />
+            <strong>inputs</strong>
+            <span>{analysis.input_hash.slice(0, 12)}{analysis.cached ? " (replayed)" : ""}</span>
+          </div>
+          <p className="error">{analysis.disclaimer}</p>
         </div>
       )}
     </div>
